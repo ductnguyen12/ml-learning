@@ -1,0 +1,8 @@
+{
+  "python.linting.pylintEnabled": true,
+  "python.linting.pylintPath": "${workspaceFolder}/venv/bin/pylint",
+  "python.linting.enabled": true,
+  "python.linting.ignorePatterns": [".vscode/*.py", "**/site-packages/**/*.py"],
+  "python.linting.maxNumberOfProblems": 100,
+  "python.defaultInterpreterPath": "${workspaceFolder}/venv/bin/python",
+}
