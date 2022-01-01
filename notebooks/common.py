@@ -1,3 +1,4 @@
+from typing import Callable, Dict
 import torch
 from torch import nn, optim
 from torch.utils.data import DataLoader
@@ -8,16 +9,18 @@ class ModelManager:
         self,
         model: nn.Module,
         loss_fn: nn.Module,
-        optimizer: optim.Optimizer,
+        optimizer: Callable[..., optim.Optimizer],
         device: str = None,
+        hyperparameters: Dict = None,
     ):
         if device is None:
             self.device: str = "cuda" if torch.cuda.is_available() else "cpu"
         else:
             self.device: str = device
+        self.hyperparameters = hyperparameters or {}
         self.model: nn.Module = model.to(self.device)
         self.loss_fn: nn.Module = loss_fn
-        self.optimizer: optim.Optimizer = optimizer
+        self.optimizer: optim.Optimizer = optimizer(self.model.parameters(), **self.hyperparameters)
 
     def train(self, data_loader: DataLoader):
         print(f"Run training using {self.device}")
@@ -26,7 +29,7 @@ class ModelManager:
         for batch, (X, y) in enumerate(data_loader):
             X, y = X.to(self.device), y.to(self.device)
 
-            pred = self.model(X)
+            pred, _ = self.model(X)
             loss = self.loss_fn(pred, y)
 
             self.optimizer.zero_grad()
@@ -45,13 +48,27 @@ class ModelManager:
         with torch.no_grad():
             for X, y in data_loader:
                 X, y = X.to(self.device), y.to(self.device)
-                pred = self.model(X)
+                pred, _ = self.model(X)
                 test_loss += self.loss_fn(pred, y).item()
                 correct += (pred.argmax(1) == y).type(torch.float).sum().item()
         test_loss /= num_batches
         correct /= size
         print(
             f"Test Error: \n Accuracy: {(100 * correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+
+    def run_train_loop(
+        self, 
+        train_data_loader: DataLoader,
+        test_data_loader: DataLoader,
+        epochs: int,
+        model_params_path: str = None
+    ):
+        for epoch in range(epochs):
+            print(f"Epoch {epoch + 1}\n-------------------------------")
+            self.train(data_loader=train_data_loader)
+            self.test(data_loader=test_data_loader)
+        if model_params_path:
+            self.save_parameters(model_params_path)
 
     def save_parameters(self, filepath):
         torch.save(self.model.state_dict(), filepath)
