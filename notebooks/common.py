@@ -20,6 +20,7 @@ class ModelManager:
         self.optimizer: optim.Optimizer = optimizer
 
     def train(self, data_loader: DataLoader):
+        print(f"Run training using {self.device}")
         size: int = len(data_loader.dataset)
         self.model.train()
         for batch, (X, y) in enumerate(data_loader):
